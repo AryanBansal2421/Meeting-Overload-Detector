@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meeting Overload Detector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0f0f0f;
+        --panel: #1a1a1a;
+        --panel-2: #121212;
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #f5f7ff;
+        --muted: #8b90a7;
+        --accent: #6366f1;
+        --accent-2: #818cf8;
+        --green: #2fbf71;
+        --yellow: #f59e0b;
+        --orange: #f97316;
+        --red: #ef4444;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .dashboard {
+        min-height: 100vh;
+        padding: 24px;
+        background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.16), transparent 24%), var(--bg);
+      }
+
+      .nav, .card, .metric-card, .heatmap-cell, .risk-item, .suggestion-card {
+        transition: all 0.2s ease;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: rgba(26, 26, 26, 0.95);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+
+      .nav-left, .nav-right, .nav-center {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        font-size: 18px;
+      }
+
+      .brand {
+        font-weight: 800;
+        font-size: 17px;
+      }
+
+      .week-selector {
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .connect-button {
+        border: none;
+        background: var(--accent);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin: 20px 0 24px;
+      }
+
+      .metric-card {
+        padding: 18px 18px 16px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+
+      .metric-card:hover,
+      .card:hover,
+      .risk-item:hover,
+      .suggestion-card:hover {
+        border-color: rgba(99, 102, 241, 0.35);
+        box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.16), 0 16px 34px rgba(0, 0, 0, 0.25);
+        transform: translateY(-2px);
+      }
+
+      .metric-label {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .metric-value {
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .metric-footnote {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .text-danger {
+        color: var(--red);
+      }
+
+      .text-warning {
+        color: var(--yellow);
+      }
+
+      .text-success {
+        color: var(--green);
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: 1.58fr 0.92fr;
+        gap: 24px;
+      }
+
+      .column {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .card {
+        padding: 20px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+      }
+
+      .card h3 {
+        margin: 0 0 16px;
+        font-size: 18px;
+      }
+
+      .heatmap {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .heatmap-legend {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+      }
+
+      .heatmap-grid {
+        display: grid;
+        grid-template-columns: 70px repeat(8, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .heatmap-head,
+      .heatmap-day {
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .heatmap-cell {
+        position: relative;
+        min-height: 38px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+      }
+
+      .heatmap-cell.free {
+        background: rgba(47, 191, 113, 0.24);
+      }
+
+      .heatmap-cell.single {
+        background: rgba(245, 158, 11, 0.26);
+      }
+
+      .heatmap-cell.double {
+        background: rgba(249, 115, 22, 0.28);
+      }
+
+      .heatmap-cell.back-to-back {
+        background: rgba(239, 68, 68, 0.3);
+      }
+
+      .heatmap-cell:hover {
+        transform: scale(1.03);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+
+      .heatmap-cell .hover-avatar {
+        position: absolute;
+        right: 4px;
+        top: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.16);
+        color: white;
+        display: grid;
+        place-items: center;
+        font-size: 9px;
+        font-weight: 700;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.2s ease;
+      }
+
+      .heatmap-cell:hover .hover-avatar {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      #tooltip {
+        position: fixed;
+        pointer-events: none;
+        z-index: 20;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: rgba(10, 10, 10, 0.95);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 0.15s ease, transform 0.15s ease;
+      }
+
+      .timeline-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 94px 1fr 38px;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .bar-name {
+        font-size: 13px;
+        color: var(--text);
+      }
+
+      .bar-track {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      }
+
+      .bar-fill.at-risk {
+        background: linear-gradient(90deg, var(--orange), var(--red));
+      }
+
+      .bar-value {
+        text-align: right;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .risk-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .risk-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .risk-main {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(129, 140, 248, 0.15));
+        color: white;
+        font-weight: 700;
+        font-size: 12px;
+      }
+
+      .risk-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .risk-name {
+        font-weight: 600;
+      }
+
+      .risk-role {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .risk-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+      }
+
+      .mini-stat {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .badge {
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 8px;
+      }
+
+      .badge.warning {
+        color: var(--red);
+        background: rgba(239, 68, 68, 0.12);
+      }
+
+      .badge.warn-yellow {
+        color: var(--yellow);
+        background: rgba(245, 158, 11, 0.14);
+      }
+
+      .suggestions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .suggestion-card {
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .suggestion-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .suggestion-time {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+        margin: 6px 0;
+      }
+
+      .suggestion-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .ghost-button {
+        background: transparent;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        padding: 8px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .focus-card {
+        padding: 20px;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(26, 26, 26, 0.92));
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        margin-top: 24px;
+      }
+
+      .focus-card h3 {
+        margin: 0 0 10px;
+      }
+
+      .focus-description {
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+
+      .timeline-bar {
+        display: flex;
+        gap: 8px;
+        padding: 10px 0 16px;
+      }
+
+      .timeline-slot {
+        flex: 1;
+        min-height: 30px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .timeline-slot.meeting {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.75), rgba(99, 102, 241, 0.3));
+      }
+
+      .timeline-slot.focus {
+        background: linear-gradient(135deg, rgba(47, 191, 113, 0.8), rgba(47, 191, 113, 0.25));
+      }
+
+      .timeline-labels {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @media (max-width: 1024px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .dashboard {
+          padding: 14px;
+        }
+
+        .nav {
+          flex-direction: column;
+          gap: 12px;
+          align-items: flex-start;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .heatmap-grid {
+          grid-template-columns: 58px repeat(8, minmax(0, 1fr));
+        }
+
+        .bar-row {
+          grid-template-columns: 74px 1fr 30px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard">
+      <nav class="nav">
+        <div class="nav-left">
+          <div class="logo">◉</div>
+          <div class="brand">MeetingGuard</div>
+        </div>
+        <div class="nav-center">
+          <div class="week-selector">← Week of June 23 →</div>
+        </div>
+        <div class="nav-right">
+          <button class="connect-button">Connect Google Calendar</button>
+        </div>
+      </nav>
+
+      <section class="stats-grid">
+        <div class="metric-card">
+          <div class="metric-label">Total meeting hours this week</div>
+          <div class="metric-value">24h</div>
+          <div class="metric-footnote">Across 18 meetings</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Focus time remaining</div>
+          <div class="metric-value text-danger">6h</div>
+          <div class="metric-footnote">Below the 8h threshold</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Team members at risk</div>
+          <div class="metric-value text-warning">3</div>
+          <div class="metric-footnote">Needs buffer this week</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Avg meeting-to-focus ratio</div>
+          <div class="metric-value text-success">0.8</div>
+          <div class="metric-footnote">Healthy threshold</div>
+        </div>
+      </section>
+
+      <section class="content-grid">
+        <div class="column">
+          <div class="card">
+            <h3>Team Calendar Heatmap</h3>
+            <div class="heatmap">
+              <div class="heatmap-legend">
+                <span class="legend-item"><span class="legend-swatch" style="background: rgba(47,191,113,0.24)"></span> Free</span>
+                <span class="legend-item"><span class="legend-swatch" style="background: rgba(245,158,11,0.26)"></span> 1 meeting</span>
+                <span class="legend-item"><span class="legend-swatch" style="background: rgba(249,115,22,0.28)"></span> 2 meetings</span>
+                <span class="legend-item"><span class="legend-swatch" style="background: rgba(239,68,68,0.3)"></span> Back-to-back</span>
+              </div>
+              <div id="heatmap" class="heatmap-grid"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Meeting Density Timeline</h3>
+            <div id="timeline" class="timeline-list"></div>
+          </div>
+        </div>
+
+        <div class="column">
+          <div class="card">
+            <h3>At Risk Members</h3>
+            <div id="risk-list" class="risk-list"></div>
+          </div>
+
+          <div class="card">
+            <h3>Suggested Reschedules</h3>
+            <div id="suggestions" class="suggestions-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="focus-card">
+        <h3>Focus Block Optimizer</h3>
+        <div class="focus-description">Optimal schedule for Priya Sharma — maximum non-overlapping focus blocks</div>
+        <div class="timeline-bar" id="focusTimeline"></div>
+        <div class="timeline-labels">
+          <span>9:00</span>
+          <span>12:00</span>
+          <span>3:00</span>
+          <span>6:00</span>
+        </div>
+        <p class="focus-description" style="margin-top: 12px;">Algorithm found 3 focus blocks totaling 4.5h (↑ from 1.5h)</p>
+      </div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script>
+      const heatmapData = [
+        { day: "Mon", blocks: ["free", "single", "double", "back-to-back", "single", "free", "single", "free"] },
+        { day: "Tue", blocks: ["single", "free", "single", "free", "double", "single", "double", "free"] },
+        { day: "Wed", blocks: ["free", "single", "double", "back-to-back", "single", "free", "free", "single"] },
+        { day: "Thu", blocks: ["single", "double", "free", "single", "free", "single", "back-to-back", "single"] },
+        { day: "Fri", blocks: ["free", "single", "free", "single", "double", "free", "single", "free"] }
+      ];
+
+      const heatmap = document.getElementById("heatmap");
+      const hours = ["9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm"];
+      const timeLabels = ["9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm"];
+
+      const heatmapHeader = document.createElement("div");
+      heatmapHeader.className = "heatmap-head";
+      heatmapHeader.textContent = "";
+      heatmap.appendChild(heatmapHeader);
+
+      timeLabels.forEach((time) => {
+        const head = document.createElement("div");
+        head.className = "heatmap-head";
+        head.textContent = time;
+        heatmap.appendChild(head);
+      });
+
+      heatmapData.forEach((row) => {
+        const day = document.createElement("div");
+        day.className = "heatmap-day";
+        day.textContent = row.day;
+        heatmap.appendChild(day);
+
+        row.blocks.forEach((state, index) => {
+          const cell = document.createElement("div");
+          cell.className = `heatmap-cell ${state}`;
+          const members = [
+            { name: "Priya Sharma", initials: "PS", label: "Priya" },
+            { name: "Rohan Mehta", initials: "RM", label: "Rohan" },
+            { name: "Anya Singh", initials: "AS", label: "Anya" },
+            { name: "Vikram Patel", initials: "VP", label: "Vikram" },
+            { name: "Zara Khan", initials: "ZK", label: "Zara" }
+          ];
+          const member = members[(index + row.day.length) % members.length];
+          cell.dataset.tooltip = `${row.day} ${hours[index]} • ${member.name}`;
+          cell.dataset.avatar = member.initials;
+          cell.innerHTML = `<span class="hover-avatar">${member.initials}</span>`;
+          cell.addEventListener("mouseenter", (event) => showTooltip(event, cell.dataset.tooltip, member.initials));
+          cell.addEventListener("mousemove", (event) => moveTooltip(event));
+          cell.addEventListener("mouseleave", hideTooltip);
+          heatmap.appendChild(cell);
+        });
+      });
+
+      const timeline = document.getElementById("timeline");
+      const densityMembers = [
+        { name: "Priya Sharma", percent: 48, atRisk: false },
+        { name: "Rohan Mehta", percent: 62, atRisk: true },
+        { name: "Anya Singh", percent: 54, atRisk: true },
+        { name: "Vikram Patel", percent: 41, atRisk: false },
+        { name: "Zara Khan", percent: 38, atRisk: false }
+      ];
+
+      densityMembers.forEach((member) => {
+        const row = document.createElement("div");
+        row.className = "bar-row";
+        row.innerHTML = `
+          <div class="bar-name">${member.name}</div>
+          <div class="bar-track"><div class="bar-fill ${member.atRisk ? "at-risk" : ""}" style="width: ${member.percent}%"></div></div>
+          <div class="bar-value">${member.percent}%</div>
+        `;
+        timeline.appendChild(row);
+      });
+
+      const riskList = document.getElementById("risk-list");
+      const riskMembers = [
+        { initials: "PS", name: "Priya Sharma", role: "Engineering Manager", meetings: "6h meetings / 2h focus", badge: "At Risk", badgeClass: "warn-yellow" },
+        { initials: "RM", name: "Rohan Mehta", role: "Senior Developer", meetings: "7h meetings / 1h focus", badge: "Overloaded", badgeClass: "warning" },
+        { initials: "AS", name: "Anya Singh", role: "Senior Developer", meetings: "6h meetings / 2h focus", badge: "At Risk", badgeClass: "warn-yellow" }
+      ];
+
+      riskMembers.forEach((member) => {
+        const row = document.createElement("div");
+        row.className = "risk-item";
+        row.innerHTML = `
+          <div class="risk-main">
+            <div class="avatar">${member.initials}</div>
+            <div class="risk-meta">
+              <div class="risk-name">${member.name}</div>
+              <div class="risk-role">${member.role}</div>
+            </div>
+          </div>
+          <div class="risk-right">
+            <div class="mini-stat">${member.meetings}</div>
+            <div class="badge ${member.badgeClass}">${member.badge}</div>
+          </div>
+        `;
+        riskList.appendChild(row);
+      });
+
+      const suggestions = document.getElementById("suggestions");
+      const suggestionCards = [
+        { title: "Design sync", time: "11:00 AM", newTime: "1:00 PM", note: "Frees 2h focus block" },
+        { title: "Roadmap review", time: "2:30 PM", newTime: "4:00 PM", note: "Frees 2h focus block" },
+        { title: "Stakeholder check-in", time: "4:30 PM", newTime: "5:30 PM", note: "Frees 2h focus block" }
+      ];
+
+      suggestionCards.forEach((card) => {
+        const item = document.createElement("div");
+        item.className = "suggestion-card";
+        item.innerHTML = `
+          <div class="suggestion-title">${card.title}</div>
+          <div class="suggestion-time"><span>↺</span><span>${card.time}</span><span>→</span><span>${card.newTime}</span></div>
+          <div class="suggestion-footer">
+            <span class="badge" style="color: var(--green); background: rgba(47,191,113,0.12);">${card.note}</span>
+            <button class="ghost-button">Apply suggestion</button>
+          </div>
+        `;
+        suggestions.appendChild(item);
+      });
+
+      const focusTimeline = document.getElementById("focusTimeline");
+      const focusSlots = [
+        { type: "focus", label: "Focus" },
+        { type: "meeting", label: "Meeting" },
+        { type: "focus", label: "Focus" },
+        { type: "meeting", label: "Meeting" },
+        { type: "focus", label: "Focus" },
+        { type: "meeting", label: "Meeting" },
+        { type: "focus", label: "Focus" }
+      ];
+
+      focusSlots.forEach((slot) => {
+        const block = document.createElement("div");
+        block.className = `timeline-slot ${slot.type}`;
+        focusTimeline.appendChild(block);
+      });
+
+      const tooltip = document.getElementById("tooltip");
+
+      function showTooltip(event, text, initials) {
+        tooltip.textContent = text;
+        tooltip.style.opacity = "1";
+        tooltip.style.transform = "translateY(0)";
+        moveTooltip(event);
+      }
+
+      function moveTooltip(event) {
+        tooltip.style.left = `${event.clientX + 14}px`;
+        tooltip.style.top = `${event.clientY + 14}px`;
+      }
+
+      function hideTooltip() {
+        tooltip.style.opacity = "0";
+        tooltip.style.transform = "translateY(6px)";
+      }
+    </script>
+  </body>
+</html>
