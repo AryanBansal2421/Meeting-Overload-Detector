@@ -2,10 +2,6 @@
 
 A full-stack calendar analytics tool that connects to your Google Calendar, detects meeting overload using interval scheduling algorithms, and suggests optimal reschedule slots.
 
-## 🚀 Live Demo
-- **Frontend:** [your-app.vercel.app](https://your-app.vercel.app)
-- **Backend:** [your-backend.onrender.com](https://your-backend.onrender.com)
-
 ## 🧠 DSA Core
 - **Greedy Interval Scheduling** — finds maximum non-overlapping focus blocks from calendar events
 - **Min-Heap Priority Queue** — ranks and surfaces top reschedule slots by window size
